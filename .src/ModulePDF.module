@@ -1,0 +1,78 @@
+' Gambas module file
+
+'URL: https://www.gambas-es.org/viewtopic.php?f=5&t=7947&highlight=
+'AUTOR: TINCHO
+
+'' Funcion que utiliza el programa gostscript de la terminal shell. Desencripta el PDF que del que se pasa su ruta como parámetro y luego si toddo fue correcto, devuelve la ruta del nuevo archivo desencriptado.
+
+Public Function PDFDecrypt(strPath As String) As String
+
+    Dim strName As String
+    Dim strCommand As String
+    Dim prsCommand As Process
+
+    strName = File.Dir(strPath) &/ File.BaseName(strPath) & "-dcr.pdf"
+    strCommand = "gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile='"
+    strCommand &= strName & "' -c .setpdfwrite -f '" & strPath & "'"
+    prsCommand = Shell strCommand
+    While prsCommand.State = prsCommand.Running
+        Wait 0.05
+    Wend
+    If Exist(strName) Then
+        If Stat(strName).Type = gb.File Then
+            Return strName
+        Else
+            Return "0"
+        Endif
+    Endif
+
+End
+
+'' Esta función trabaja con el programa de terminal qpdf y luego de crear el ar
+'' chivo pdf descompriomido devuelve la ruta de este.
+
+Public Function PDFDecompress(inp As String) As String
+
+    Dim out As String
+    Dim com As String
+
+    out = File.Dir(inp) &/ File.BaseName(inp) & "-unc.pdf"
+    com = "qpdf --stream-data=uncompress '"
+    com &= inp & "' '" & out & "'"
+
+    Shell com Wait
+
+    If Exist(out) Then
+
+        If Stat(out).Type = gb.File Then
+            Return out
+        Else
+            Return ""
+        Endif
+    Endif
+
+End
+
+Public Function PDFReplace(inp As String, s As String, r As String) As String
+
+    Dim out As String
+    Dim com As String
+
+    out = File.Dir(inp) &/ File.BaseName(inp) & "-rep.pdf"
+
+    com = "sed -e \"s/"
+    com &= s & "/"
+    com &= r & "/g\" <'"
+    com &= inp & "' >'" & out & "'"
+
+    Shell com Wait
+
+    If Exist(out) Then
+        If Stat(out).Type = gb.File Then
+            Return out
+        Else
+            Return ""
+        Endif
+    Endif
+
+End

@@ -1,0 +1,181 @@
+' Gambas class file
+
+Public FICHERO As String
+
+Public Sub ButtonBoxFichero_Click()
+
+    Dialog.Filter = ["*.pdf", "*.PDF", "Ficheros PDF"]
+
+    If Dialog.OpenFile() Then
+        'CANCELADO
+    Else
+        FICHERO = Dialog.Path
+        ButtonBoxFichero.text = fichero
+    Endif
+
+End
+
+Public Sub PictureBoxPDF_MouseDown()
+
+    ButtonBoxFichero_Click()
+    iniciarPictures()
+
+End
+
+Public Sub ButtonOperar_Click()
+
+    Dim rutaficheroFODG As String
+    Dim rutaficheroReemplazado As String
+    Dim rutaficheroPDF As String
+    Dim contenido As New String[]
+
+    iniciarPictures()
+    LabelNombreCambiado.text = ""
+    Me.mouse = Mouse.Wait
+    'paso 1: convierte pdf a fodt
+
+    rutaficheroFODG = ModuleLibreOffice.PDFaFODG(fichero)
+
+    'paso 2: leer el contenido del archivo
+    contenido.Add(ModuleLibreOffice.AbrirContenido(rutaficheroFODG))
+
+    'empezamos a hacer los reemplazos
+    If TextBoxBuscar0.text <> "" Then
+        contenido = ModuleLibreOffice.PDFReplace(contenido[0], TextBoxBuscar0.text, TextBoxReemplazar0.text)
+        mostrarResultadoOperacion(contenido[1], PictureBox0)
+    Endif
+    If TextBoxBuscar1.text <> "" Then
+        contenido = ModuleLibreOffice.PDFReplace(contenido[0], TextBoxBuscar1.text, TextBoxReemplazar1.text)
+        mostrarResultadoOperacion(contenido[1], PictureBox1)
+    Endif
+    If TextBoxBuscar2.text <> "" Then
+        contenido = ModuleLibreOffice.PDFReplace(contenido[0], TextBoxBuscar2.text, TextBoxReemplazar2.text)
+        mostrarResultadoOperacion(contenido[1], PictureBox2)
+    Endif
+    If TextBoxBuscar3.text <> "" Then
+        contenido = ModuleLibreOffice.PDFReplace(contenido[0], TextBoxBuscar3.text, TextBoxReemplazar3.text)
+        mostrarResultadoOperacion(contenido[1], PictureBox3)
+    Endif
+    If TextBoxBuscar4.text <> "" Then
+        contenido = ModuleLibreOffice.PDFReplace(contenido[0], TextBoxBuscar4.text, TextBoxReemplazar4.text)
+        mostrarResultadoOperacion(contenido[1], PictureBox4)
+    Endif
+
+    'paso 3: guardar contenido
+
+    rutaficheroReemplazado = ModuleLibreOffice.GuardarContenido(rutaficheroFODG, contenido[0])
+
+    If rutaficheroReemplazado = "0" Then
+        Message.Error(("Se ha producido un error al guardar el contenido"))
+        LabelNombreCambiado.text = ""
+    Else
+        rutaficheroPDF = ModuleLibreOffice.FODGaFODG(rutaficheroReemplazado)
+        LabelNombreCambiado.text = rutaficheroPDF
+
+    Endif
+    ModuleLibreOffice.borradoTemporales(fichero)
+    Me.mouse = Mouse.Default
+
+End
+
+Public Sub ButtonCopiarRuta_Click()
+
+    ButtonBoxFichero.text = LabelNombreCambiado.text
+    fichero = ButtonBoxFichero.text
+    iniciarPictures()
+
+End
+
+Public Sub ButtonGuardaPerfil_Click()
+
+    Dim perfil As String
+    Dim out As String
+
+    Dialog.Title = ("Guardar perfil de busquedas y reemplazos")
+    Dialog.Filter = ["*.perfil", "perfiles"]
+
+    If Dialog.SaveFile() Then
+        Return
+    Else
+        perfil = TextBoxBuscar0.text & "\n" '0
+        perfil &= TextBoxBuscar1.text & "\n" '1
+        perfil &= TextBoxBuscar2.text & "\n" '2
+        perfil &= TextBoxBuscar3.text & "\n" '3
+        perfil &= TextBoxBuscar4.text & "\n" '4
+        perfil &= TextBoxReemplazar0.text & "\n" '5
+        perfil &= TextBoxReemplazar1.text & "\n" '6
+        perfil &= TextBoxReemplazar2.text & "\n" '7
+        perfil &= TextBoxReemplazar3.text & "\n" '8
+        perfil &= TextBoxReemplazar4.text & "\n" '9
+        out = File.Dir(Dialog.Path) &/ File.BaseName(Dialog.Path) & ".perfil"
+        File.Save(out, perfil)
+    Endif
+
+End
+
+Public Sub ButtonAbrePerfil_Click()
+
+    Dim lineas As String[]
+
+    Dialog.Title = ("Abrir perfil de busquedas y reemplazos")
+    Dialog.Filter = ["*.perfil", "perfiles"]
+
+    If Dialog.OpenFile() Then
+        Return
+    Else
+        lineas = Split(File.Load(Dialog.path), "\n")
+        TextBoxBuscar0.text = lineas[0] '0
+        TextBoxBuscar1.text = lineas[1] '1
+        TextBoxBuscar2.text = lineas[2] '2
+        TextBoxBuscar3.text = lineas[3] '3
+        TextBoxBuscar4.text = lineas[4] '4
+
+        TextBoxReemplazar0.text = lineas[5] '5
+        TextBoxReemplazar1.text = lineas[6] '6
+        TextBoxReemplazar2.text = lineas[7] '7
+        TextBoxReemplazar3.text = lineas[8] '8
+        TextBoxReemplazar4.text = lineas[9] '9
+
+    Endif
+    iniciarPictures()
+
+End
+
+Public Sub mostrarResultadoOperacion(resultado As String, p As PictureBox)
+
+    If resultado = "ok" Then
+        p.Picture = Picture["icon:/22/apply"]
+    Else
+        p.Picture = Picture["icon:/22/cancel"]
+    Endif
+
+End
+
+Public Sub iniciarPictures()
+
+    Dim p As Object
+
+    For Each p In Me.Controls
+        If p Is Picturebox And p.name <> "PictureBoxPDF" Then
+            p.Picture = Picture["icon:/22/find"]
+        Endif
+    Next
+
+End
+
+Public Sub Form_Open()
+
+    iniciarPictures()
+    TextLabelVersionAutor.text = "Autor: JsbSan 2020 versión " & Application.Version
+    LabelNombreCambiado.text = ""
+
+End
+
+Public Sub ButtonAbrirModificado_Click()
+
+    If LabelNombreCambiado.text <> "" Then
+        Desktop.open(LabelNombreCambiado.text)
+
+    Endif
+
+End

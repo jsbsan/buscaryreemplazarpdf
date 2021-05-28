@@ -1,0 +1,72 @@
+' Gambas module file
+
+Public Function PDFaFODG(strPath As String) As String
+
+    Dim prsCommand As Process
+
+    prsCommand = Exec ["soffice", "--headless", "--convert-to", "fodg", "--outdir", File.dir(strPath), strPath]
+    While prsCommand.State = prsCommand.Running
+        Wait 0.05
+    Wend
+
+    Return Replace(strPath, ".pdf", ".fodg")
+
+End
+
+Public Function FODGaFODG(strPath As String) As String 'cambiar el nombre de FODGaPDF
+
+    Dim prsCommand As Process
+
+    prsCommand = Exec ["soffice", "--headless", "--convert-to", "pdf", "--outdir", File.dir(strPath), strPath]
+    While prsCommand.State = prsCommand.Running
+        Wait 0.05
+    Wend
+
+    Return Replace(strPath, ".fodg", ".pdf")
+
+End
+
+Public Function PDFReplace(contenido As String, s As String, r As String) As String[]
+
+    Dim contenidoInicial As String = contenido
+
+    CONTENIDO = Replace(contenido, S, R)
+
+    If contenidoInicial = contenido Then
+        Return [contenido, "fallo"]
+    Else
+        Return [contenido, "ok"]
+
+    Endif
+
+End
+
+Public Function AbrirContenido(strPath As String) As String ''Devuelve el contenido del archivo
+
+    Return File.Load(strPath)
+
+End
+
+Public Function GuardarContenido(strPath As String, contenido As String) As String ''Devuelve el contenido del archivo
+
+    Dim out As String
+
+    out = File.Dir(strPath) &/ File.BaseName(strPath) & "-rep.fodg"
+
+    File.Save(out, CONTENIDO)
+
+    If Error Then
+        Return "0" 'error producido
+    Else
+        Return out
+    Endif
+
+End
+
+Public Sub borradoTemporales(strPath As String)
+    'borrado de archivos temporales
+
+    Kill File.Dir(strPath) &/ File.BaseName(strPath) & "-rep.fodg"
+    Kill File.Dir(strPath) &/ File.BaseName(strPath) & ".fodg"
+
+End
